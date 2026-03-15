@@ -1,0 +1,8 @@
+{
+  "name": "agent-skills",
+  "description": "A collection of agent skills for Claude Code",
+  "author": { "name": "masaki39" },
+  "homepage": "https://github.com/masaki39/agent-skills",
+  "repository": "https://github.com/masaki39/agent-skills",
+  "license": "MIT"
+}

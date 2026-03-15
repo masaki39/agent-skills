@@ -1,0 +1,8 @@
+{
+  "name": "agent-skills",
+  "owner": { "name": "masaki39" },
+  "metadata": {
+    "description": "A collection of agent skills for Claude Code"
+  },
+  "plugins": []
+}
