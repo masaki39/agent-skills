@@ -8,6 +8,7 @@
   "repository": "https://github.com/masaki39/agent-skills",
   "license": "MIT",
   "skills": [
-    "./skills/pdf-extract"
+    "./skills/pdf-extract",
+    "./skills/simple-citations-setup"
   ]
 }

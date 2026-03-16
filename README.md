@@ -16,7 +16,8 @@ Type `/plugin` in the chat, search for `masaki39/agent-skills`, and install.
 
 | Name | Description |
 |------|-------------|
-| (coming soon) | |
+| pdf-extract | Extract figures and charts from PDF using pdfimages CLI |
+| simple-citations-setup | Setup the simple-citations Obsidian plugin with Zotero Better BibTeX integration |
 
 ## Structure
 
@@ -26,7 +27,9 @@ agent-skills/
 │   ├── plugin.json
 │   └── marketplace.json
 ├── skills/
-│   └── <skill-name>/
+│   ├── pdf-extract/
+│   │   └── SKILL.md
+│   └── simple-citations-setup/
 │       └── SKILL.md
 └── README.md
 ```

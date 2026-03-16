@@ -17,6 +17,18 @@
         "./skills/pdf-extract"
       ],
       "homepage": "https://github.com/masaki39/agent-skills"
+    },
+    {
+      "name": "simple-citations-setup",
+      "description": "Setup the simple-citations Obsidian plugin with Zotero Better BibTeX integration",
+      "author": {
+        "name": "masaki39"
+      },
+      "source": "./",
+      "skills": [
+        "./skills/simple-citations-setup"
+      ],
+      "homepage": "https://github.com/masaki39/agent-skills"
     }
   ]
 }
