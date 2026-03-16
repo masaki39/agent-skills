@@ -6,5 +6,8 @@
   },
   "homepage": "https://github.com/masaki39/agent-skills",
   "repository": "https://github.com/masaki39/agent-skills",
-  "license": "MIT"
+  "license": "MIT",
+  "skills": [
+    "./skills/pdf-extract"
+  ]
 }

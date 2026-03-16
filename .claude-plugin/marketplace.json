@@ -1,19 +1,22 @@
 {
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "masaki39-agent-skills",
+  "description": "A collection of agent skills for Claude Code",
   "owner": {
     "name": "masaki39"
-  },
-  "metadata": {
-    "description": "A collection of agent skills for Claude Code"
   },
   "plugins": [
     {
       "name": "pdf-extract",
-      "source": "./skills/pdf-extract",
       "description": "Extract figures and charts from PDF using pdfimages CLI",
       "author": {
         "name": "masaki39"
-      }
+      },
+      "source": "./",
+      "skills": [
+        "./skills/pdf-extract"
+      ],
+      "homepage": "https://github.com/masaki39/agent-skills"
     }
   ]
 }
