@@ -1,6 +1,8 @@
 {
-  "name": "agent-skills",
-  "owner": { "name": "masaki39" },
+  "name": "masaki39-agent-skills",
+  "owner": {
+    "name": "masaki39"
+  },
   "metadata": {
     "description": "A collection of agent skills for Claude Code"
   },
@@ -9,7 +11,9 @@
       "name": "pdf-extract",
       "source": "./skills/pdf-extract",
       "description": "Extract figures and charts from PDF using pdfimages CLI",
-      "author": { "name": "masaki39" }
+      "author": {
+        "name": "masaki39"
+      }
     }
   ]
 }
