@@ -14,7 +14,41 @@ Setup the [simple-citations](https://github.com/masaki39/simple-citations) Obsid
 
 ---
 
-## Step 1: Check prerequisites
+## Step 1: Detect OS and set platform-specific paths
+
+```bash
+python3 -c "
+import platform, os, sys
+
+os_name = platform.system()  # 'Darwin', 'Windows', 'Linux'
+home = os.path.expanduser('~')
+
+if os_name == 'Darwin':
+    zotero_profiles = os.path.join(home, 'Library/Application Support/Zotero/Profiles')
+    obsidian_config = os.path.join(home, 'Library/Application Support/obsidian/obsidian.json')
+    zotero_app_check = '/Applications/Zotero.app'
+elif os_name == 'Windows':
+    appdata = os.environ.get('APPDATA', '')
+    zotero_profiles = os.path.join(appdata, 'Zotero/Profiles')
+    obsidian_config = os.path.join(appdata, 'obsidian/obsidian.json')
+    zotero_app_check = os.path.join(os.environ.get('PROGRAMFILES','C:/Program Files'), 'Zotero/Zotero.exe')
+else:  # Linux
+    zotero_profiles = os.path.join(home, '.zotero/zotero')
+    obsidian_config = os.path.join(home, '.config/obsidian/obsidian.json')
+    zotero_app_check = '/usr/bin/zotero'
+
+print(f'OS={os_name}')
+print(f'ZOTERO_PROFILES={zotero_profiles}')
+print(f'OBSIDIAN_CONFIG={obsidian_config}')
+print(f'ZOTERO_APP={zotero_app_check}')
+"
+```
+
+Store these values. All subsequent steps use these variables.
+
+---
+
+## Step 2: Check prerequisites
 
 ### Obsidian CLI
 ```bash
@@ -23,54 +57,70 @@ which obsidian || echo "NOT FOUND"
 If not found, instruct the user to enable it in Obsidian: **Settings → General → Command line interface → Enable**, then stop.
 
 ### Zotero installation
-```bash
-ls /Applications/Zotero.app 2>/dev/null && echo "FOUND" || echo "NOT FOUND"
-```
-If not found, instruct the user to install Zotero from https://www.zotero.org.
+
+Check using the `ZOTERO_APP` path from Step 1:
+- macOS/Linux: `ls <ZOTERO_APP> 2>/dev/null && echo "FOUND" || echo "NOT FOUND"`
+- Windows: `dir "<ZOTERO_APP>" 2>nul && echo FOUND || echo NOT FOUND`
+
+If not found, instruct the user to install Zotero from https://www.zotero.org, then stop.
 
 ### Better BibTeX installation
-Find the Zotero profile directory:
-```bash
-ls ~/Library/Application\ Support/Zotero/Profiles/
-```
-Check for Better BibTeX in extensions:
-```bash
-PROFILE_DIR=$(ls ~/Library/Application\ Support/Zotero/Profiles/ | grep default | head -1)
-grep -c "better-bibtex" ~/Library/Application\ Support/Zotero/Profiles/$PROFILE_DIR/extensions.json 2>/dev/null || echo "0"
-```
-If count is 0, instruct the user to install Better BibTeX for Zotero from https://retorque.re/zotero-better-bibtex/ and restart Zotero, then stop.
 
-Store the profile path for later:
+Find the Zotero profile directory using `ZOTERO_PROFILES` from Step 1:
 ```bash
-PROFILE_DIR=$(ls ~/Library/Application\ Support/Zotero/Profiles/ | grep default | head -1)
-echo "Profile: $PROFILE_DIR"
+python3 -c "
+import os
+profiles_dir = 'FILL_IN_ZOTERO_PROFILES'
+entries = [e for e in os.listdir(profiles_dir) if 'default' in e]
+print(entries[0] if entries else 'NOT FOUND')
+"
+```
+
+Check for Better BibTeX:
+```bash
+python3 -c "
+import os, json
+profile = os.path.join('FILL_IN_ZOTERO_PROFILES', 'FILL_IN_PROFILE_DIR', 'extensions.json')
+with open(profile) as f:
+    data = json.load(f)
+found = any('better-bibtex' in str(e) for e in data.get('addons', []))
+print('FOUND' if found else 'NOT FOUND')
+"
+```
+
+If NOT FOUND, instruct the user to install Better BibTeX from https://retorque.re/zotero-better-bibtex/ and restart Zotero, then stop.
+
+---
+
+## Step 3: Find Obsidian vaults
+
+Using `OBSIDIAN_CONFIG` from Step 1:
+```bash
+python3 -c "
+import json, os
+config = 'FILL_IN_OBSIDIAN_CONFIG'
+with open(config) as f:
+    data = json.load(f)
+vaults = data.get('vaults', {})
+for v in vaults.values():
+    print(v.get('path', ''))
+"
 ```
 
 ---
 
-## Step 2: Find Obsidian vaults
-
-List available vaults:
-```bash
-cat ~/Library/Application\ Support/obsidian/obsidian.json 2>/dev/null | python3 -c "import json,sys; vaults=json.load(sys.stdin).get('vaults',{}); [print(v.get('path','')) for v in vaults.values()]"
-```
-
----
-
-## Step 3: Ask user for configuration
+## Step 4: Ask user for configuration
 
 Use `AskUserQuestion` to collect the following. Show defaults clearly.
 
 ### Questions:
 
 1. **Obsidian vault path**
-   - Default: the first vault found in Step 2
-   - Example: `/Users/you/Documents/MyVault`
+   - Default: the first vault found in Step 3
 
 2. **CSL JSON export path** (where Zotero will write the bibliography file)
    - Recommended: inside the vault root so Obsidian can detect changes
    - Default: `{vault}/MyLibrary.json`
-   - Example: `/Users/you/Documents/MyVault/MyLibrary.json`
 
 3. **Literature notes folder** (inside the vault)
    - Default: `Literatures`
@@ -83,7 +133,7 @@ Use `AskUserQuestion` to collect the following. Show defaults clearly.
 
 6. **Postscript for Better BibTeX** (adds extra fields to each item)
    - Show these options and let user choose (multiple allowed):
-     - `[key]` — Zotero item key (needed for Zotero URI links in notes)
+     - `[key]` — Zotero item key (enables Zotero URI links in notes)
      - `[pdf]` — Local PDF file path
      - `[collections]` — Collection names the item belongs to
      - `[none]` — No postscript
@@ -94,16 +144,14 @@ Use `AskUserQuestion` to collect the following. Show defaults clearly.
 
 ---
 
-## Step 4: Configure Zotero via user.js
+## Step 5: Configure Zotero via user.js
 
-### 4-1: Build the postscript
+### 5-1: Build the postscript
 
-Based on user's choices in Step 3, construct the postscript content:
+Based on user's choices in Step 4, construct the postscript. Include only the chosen fields:
 
 ```javascript
-// Base (always include if any field is selected)
 if (Translator.BetterCSLJSON) {
-  // Add lines based on choices:
   // [key]:
   csl.key = zotero.key;
 
@@ -125,73 +173,33 @@ if (Translator.BetterCSLJSON) {
 }
 ```
 
-### 4-2: URL-encode the JSON path
+If `[none]` was chosen, postscript is an empty string `""`.
 
-```bash
-JSON_PATH="/path/to/library.json"  # replace with actual path from Step 3
-python3 -c "import urllib.parse; print(urllib.parse.quote('$JSON_PATH', safe=''))"
-```
+### 5-2: Write user.js via Python
 
-### 4-3: Generate timestamp
+The `user.js` file is read by Zotero on startup and safely overrides `prefs.js`. If the file already exists, replace only the `simple-citations-setup` block.
 
-```bash
-python3 -c "import time; print(int(time.time() * 1000))"
-```
-
-### 4-4: Write user.js
-
-Write (or append to) `user.js` in the Zotero profile directory. The `user.js` file is read by Zotero on startup and safely overrides `prefs.js` without modifying it.
-
-```bash
-PROFILE_DIR=$(ls ~/Library/Application\ Support/Zotero/Profiles/ | grep default | head -1)
-PREFS_PATH=~/Library/Application\ Support/Zotero/Profiles/$PROFILE_DIR/user.js
-```
-
-Write the following entries to `user.js`. If the file already exists, read it first and replace existing `simple-citations-setup` block rather than appending.
-
-Use this format for the file content (replace placeholders):
-
-```
-// === simple-citations-setup ===
-// Enable local HTTP API
-user_pref("extensions.zotero.httpServer.localAPI.enabled", true);
-
-// Better BibTeX postscript
-user_pref("extensions.zotero.translators.better-bibtex.postscript", "POSTSCRIPT_ESCAPED");
-
-// Better BibTeX auto-export
-user_pref("extensions.zotero.translators.better-bibtex.autoExport.URL_ENCODED_PATH", "JSON_VALUE");
-// === end simple-citations-setup ===
-```
-
-Where:
-- `POSTSCRIPT_ESCAPED`: the postscript from 4-1, with `\n` for newlines and `\"` for quotes (JSON string escaping)
-- `URL_ENCODED_PATH`: output from 4-2
-- `JSON_VALUE`: JSON string with this structure (escape the whole thing as a pref string):
-  ```json
-  {"created":TIMESTAMP,"path":"FULL_JSON_PATH","translatorID":"f4b52ab0-f878-4556-85a0-c7aeedd09dfc","type":"library","id":1,"status":"idle","error":"","recursive":false,"updated":TIMESTAMP,"enabled":true}
-  ```
-
-Use Python to write the file correctly:
 ```bash
 python3 << 'PYEOF'
-import json, time, urllib.parse, os, re
+import json, time, urllib.parse, os, re, platform
 
-profile_dir = os.path.expanduser(
-    "~/Library/Application Support/Zotero/Profiles/"
-    + sorted(os.listdir(os.path.expanduser("~/Library/Application Support/Zotero/Profiles/")))[0]
-)
-user_js_path = os.path.join(profile_dir, "user.js")
+# --- Fill in from previous steps ---
+json_path    = "FILL_IN_JSON_PATH"
+postscript   = "FILL_IN_POSTSCRIPT"
+profiles_dir = "FILL_IN_ZOTERO_PROFILES"
+profile_dir  = "FILL_IN_PROFILE_DIR"
+# -----------------------------------
 
-json_path = "FILL_IN_PATH"  # from Step 3
-postscript = "FILL_IN_POSTSCRIPT"  # from Step 4-1
+user_js_path = os.path.join(profiles_dir, profile_dir, "user.js")
 
 ts = int(time.time() * 1000)
 encoded_path = urllib.parse.quote(json_path, safe='')
-auto_export_val = json.dumps({"created": ts, "path": json_path,
+auto_export_val = json.dumps({
+    "created": ts, "path": json_path,
     "translatorID": "f4b52ab0-f878-4556-85a0-c7aeedd09dfc",
     "type": "library", "id": 1, "status": "idle", "error": "",
-    "recursive": False, "updated": ts, "enabled": True})
+    "recursive": False, "updated": ts, "enabled": True
+})
 
 block = f"""
 // === simple-citations-setup ===
@@ -201,7 +209,6 @@ user_pref("extensions.zotero.translators.better-bibtex.autoExport.{encoded_path}
 // === end simple-citations-setup ===
 """
 
-# Read existing file and replace block if present
 existing = ""
 if os.path.exists(user_js_path):
     with open(user_js_path) as f:
@@ -219,45 +226,39 @@ PYEOF
 
 ---
 
-## Step 5: Check if Zotero is running
+## Step 6: Start/restart Zotero and trigger export
 
 ```bash
 curl -s http://localhost:23119/api/ 2>/dev/null && echo "RUNNING" || echo "NOT RUNNING"
 ```
 
-- If **RUNNING**: Inform the user that Zotero must be **restarted** for the `user.js` settings to take effect. Ask them to restart Zotero now before continuing.
-- If **NOT RUNNING**: Start Zotero:
+- If **RUNNING**: Zotero must be **restarted** for `user.js` to take effect. Ask the user to restart Zotero now, then wait for confirmation.
+- If **NOT RUNNING**: Launch Zotero:
+  - macOS: `open -a Zotero`
+  - Windows: `start "" "FILL_IN_ZOTERO_APP"`
+  - Linux: `zotero &`
+
+  Then wait for startup:
   ```bash
-  open -a Zotero
-  ```
-  Wait a moment, then verify the HTTP API is now available:
-  ```bash
-  sleep 5 && curl -s http://localhost:23119/api/ | head -c 100
+  sleep 8 && curl -s http://localhost:23119/api/ | head -c 100
   ```
 
-After Zotero is running with the new settings, trigger the export via the HTTP API:
+After Zotero is running, trigger the initial export:
 ```bash
-JSON_PATH="FILL_IN_PATH"
+JSON_PATH="FILL_IN_JSON_PATH"
 curl -s "http://localhost:23119/better-bibtex/export/library?translator=f4b52ab0-f878-4556-85a0-c7aeedd09dfc&exportNotes=false&output=$JSON_PATH" > /dev/null && echo "Export triggered" || echo "Export failed"
 ```
 
-Then verify the file was created:
+Verify the file was created:
 ```bash
-ls -lh "FILL_IN_JSON_PATH"
+python3 -c "import os; path='FILL_IN_JSON_PATH'; print('OK:', os.path.getsize(path), 'bytes') if os.path.exists(path) else print('NOT FOUND')"
 ```
 
 ---
 
-## Step 6: Configure Obsidian plugin settings
+## Step 7: Configure Obsidian plugin settings
 
-Build the optional fields string (newline-separated, based on user's choices):
-
-```bash
-# Example if user chose key + pdf:
-OPTIONAL_FIELDS="key\npdf"
-```
-
-Use `obsidian eval` to update plugin settings. The `app.plugins.plugins` map uses the plugin ID `simple-citations`:
+Use `obsidian eval` to update plugin settings in the running Obsidian instance:
 
 ```bash
 obsidian eval code="
@@ -280,20 +281,26 @@ obsidian plugin:reload simple-citations
 
 ---
 
-## Step 7: Verify and report
+## Step 8: Verify and report
 
-Check the plugin data.json to confirm settings were applied:
+Check the plugin data.json:
 ```bash
-cat "VAULT_PATH/.obsidian/plugins/simple-citations/data.json"
+python3 -c "
+import json
+with open('VAULT_PATH/.obsidian/plugins/simple-citations/data.json') as f:
+    s = json.load(f)
+print('jsonPath:', s.get('jsonPath'))
+print('folderPath:', s.get('folderPath'))
+print('autoAddCitations:', s.get('autoAddCitations'))
+print('optionalFields:', s.get('optionalFields'))
+"
 ```
 
 Report to the user:
-- Zotero auto-export configured to: `{json_path}`
+- Zotero auto-export → `{json_path}`
 - Postscript fields: `{chosen fields}`
 - Literature notes folder: `{folder}`
 - Auto-add on update: `{bool}`
-- Auto-update on open: `{bool}`
 - Optional fields: `{fields}`
 
-If `autoAddCitations` is true, the user can now add items to Zotero and they will automatically appear as literature notes in Obsidian.
-Remind the user to run **"Add literature note"** command in Obsidian once to populate existing items.
+Remind the user to run the **"Add literature note"** command in Obsidian once to import existing library items.
