@@ -4,5 +4,12 @@
   "metadata": {
     "description": "A collection of agent skills for Claude Code"
   },
-  "plugins": []
+  "plugins": [
+    {
+      "name": "pdf-extract",
+      "source": "./skills/pdf-extract",
+      "description": "Extract figures and charts from PDF using pdfimages CLI",
+      "author": { "name": "masaki39" }
+    }
+  ]
 }
